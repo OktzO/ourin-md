@@ -9,18 +9,19 @@ const config = {
   },
 
   owner: {
-    name: "Zann", // Nama owner
-    number: ["628xxxxxxxxxx"], // Format: 628xxx (tanpa + atau 0)
+    name: "Oktz", // Nama owner
+    number: ["6285608953677"], // Format: 628xxx (tanpa + atau 0)
   },
 
   session: {
-    pairingNumber: "628xxxxxxxxx", // Nomor WA yang akan di-pair, ini penting
+    pairingNumber: "6285143885645", // Nomor WA yang akan di-pair, ini penting
     usePairingCode: true, // true = Pairing Code, false = QR Code
   },
 
   bot: {
-    name: "𝗢𝗨𝗥𝗜𝗡 𝗗𝗘𝗟𝗨𝗫𝗘", // Nama bot
+    name: "Oktz Bot", // Nama bot
     version: "3.2", // Versi bot
+    number: "6285143885645", // Nomor WA bot (di-overwrite otomatis saat koneksi terbuka)
     developer: "Zann", // Nama developer
   },
 
