@@ -86,8 +86,22 @@ function savePartners(partners) {
     cache.partnerTs = Date.now()
 }
 
-function matchJid(cleanA, cleanB) {
-    return cleanA === cleanB || cleanA.endsWith(cleanB) || cleanB.endsWith(cleanA)
+// Normalisasi ke digit saja (E.164 tanpa "+"), handle JID & device suffix.
+function normalizeNumber(value) {
+    if (!value) return ''
+    return String(value)
+        .split(':')[0]
+        .split('@')[0]
+        .replace(/[^0-9]/g, '')
+}
+
+// SECURITY: strict equality setelah normalisasi.
+// Dulu pakai endsWith() dua arah — nomor lain yang kebetulan berakhiran
+// digit sama bisa lolos sebagai owner/premium (privilege escalation).
+function matchJid(a, b) {
+    const na = normalizeNumber(a)
+    const nb = normalizeNumber(b)
+    return na !== '' && nb !== '' && na === nb
 }
 
 function isOwner(jid) {

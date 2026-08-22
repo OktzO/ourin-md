@@ -296,60 +296,60 @@ const config = {
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Normalisasi nomor ke satu format kanonik: digit saja (E.164 tanpa "+").
+// Menangani JID ("628xx@s.whatsapp.net"), device suffix ("628xx:12"),
+// dan format bebas ("+62 812-..."). Semua perbandingan nomor wajib
+// lewat sini dulu supaya formatnya konsisten.
+function normalizeNumber(value) {
+  if (!value) return "";
+  return String(value)
+    .split(":")[0]
+    .split("@")[0]
+    .replace(/[^0-9]/g, "");
+}
+
+// SECURITY: pencocokan nomor harus STRICT EQUALITY setelah normalisasi.
+// Jangan pakai includes()/endsWith() — nomor yang kebetulan mengandung
+// atau berakhiran digit sama bisa lolos sebagai owner (privilege escalation,
+// owner punya akses eval/exec = RCE penuh).
+function matchesNumber(a, b) {
+  const na = normalizeNumber(a);
+  const nb = normalizeNumber(b);
+  return na !== "" && nb !== "" && na === nb;
+}
+
 function isOwner(number) {
-  if (!number) return false;
-  const cleanNumber = number.split(":")[0].replace(/[^0-9]/g, "");
+  const cleanNumber = normalizeNumber(number);
   if (!cleanNumber) return false;
 
-  if (config.bot?.number) {
-    const botNum = config.bot.number.replace(/[^0-9]/g, "");
-    if (
-      botNum &&
-      (cleanNumber.includes(botNum) || botNum.includes(cleanNumber))
-    )
-      return true;
+  if (config.bot?.number && matchesNumber(cleanNumber, config.bot.number))
+    return true;
+
+  // Owner dari config dicek duluan & di luar try DB,
+  // supaya tetap valid saat boot sebelum initDatabase() dipanggil.
+  if (Array.isArray(config.owner?.number)) {
+    const match = config.owner.number.some(
+      (own) => matchesNumber(cleanNumber, own),
+    );
+    if (match) return true;
   }
 
   try {
     const db = getDatabase();
 
-    if (config.owner?.number) {
-      const match = config.owner.number.some((own) => {
-        const c = own.replace(/[^0-9]/g, "");
-        return (
-          c &&
-          (cleanNumber === c ||
-            cleanNumber.endsWith(c) ||
-            c.endsWith(cleanNumber))
-        );
-      });
+    if (db?.data && Array.isArray(db.data.owner)) {
+      const match = db.data.owner.some(
+        (own) => matchesNumber(cleanNumber, own),
+      );
       if (match) return true;
     }
 
-    if (db?.data && Array.isArray(db.data.owner)) {
-      const match = db.data.owner.some((own) => {
-        const c = String(own).replace(/[^0-9]/g, "");
-        return (
-          c &&
-          (cleanNumber === c ||
-            cleanNumber.endsWith(c) ||
-            c.endsWith(cleanNumber))
-        );
-      });
-      if (match) return true;
-    }
     if (db) {
       const definedOwner = db.setting("ownerNumbers");
       if (Array.isArray(definedOwner)) {
-        const match = definedOwner.some((own) => {
-          const c = String(own).replace(/[^0-9]/g, "");
-          return (
-            c &&
-            (cleanNumber === c ||
-              cleanNumber.endsWith(c) ||
-              c.endsWith(cleanNumber))
-          );
-        });
+        const match = definedOwner.some(
+          (own) => matchesNumber(cleanNumber, own),
+        );
         if (match) return true;
       }
     }
@@ -365,26 +365,13 @@ function isPremium(number) {
   if (isOwner(number)) return true;
   if (isPartner(number)) return true;
 
-  const cleanNumber = number
-    .split(":")[0]
-    .split("@")[0]
-    .replace(/[^0-9]/g, "");
-  const premiumList = config.premiumUsers || [];
+  const cleanNumber = normalizeNumber(number);
+  const premiumList = Array.isArray(config.premiumUsers)
+    ? config.premiumUsers
+    : [];
 
-  const inConfig = premiumList.some((premium) => {
-    if (!premium) return false;
-    const cleanPremium = premium
-      .split(":")[0]
-      .split("@")[0]
-      .replace(/[^0-9]/g, "");
-    return (
-      cleanNumber === cleanPremium ||
-      cleanNumber.endsWith(cleanPremium) ||
-      cleanPremium.endsWith(cleanNumber)
-    );
-  });
-
-  if (inConfig) return true;
+  if (premiumList.some((premium) => matchesNumber(number, premium)))
+    return true;
 
   try {
     if (ownerPremiumDb && ownerPremiumDb.isPremium(cleanNumber)) return true;
@@ -395,8 +382,8 @@ function isPremium(number) {
     if (db && db.data && Array.isArray(db.data.premium)) {
       const now = Date.now();
       const foundIndex = db.data.premium.findIndex((p) => {
-        if (typeof p === "string") return p === cleanNumber;
-        if (p.id) return p.id === cleanNumber;
+        if (typeof p === "string") return matchesNumber(p, cleanNumber);
+        if (p.id) return matchesNumber(p.id, cleanNumber);
         return false;
       });
 
@@ -423,18 +410,9 @@ function isPremium(number) {
     }
     if (db) {
       const savedPremium = db.setting("premiumUsers") || [];
-      const inDb = savedPremium.some((premium) => {
-        if (!premium) return false;
-        const cleanPremium = premium
-          .split(":")[0]
-          .split("@")[0]
-          .replace(/[^0-9]/g, "");
-        return (
-          cleanNumber === cleanPremium ||
-          cleanNumber.endsWith(cleanPremium) ||
-          cleanPremium.endsWith(cleanNumber)
-        );
-      });
+      const inDb = savedPremium.some((premium) =>
+        matchesNumber(number, premium),
+      );
       if (inDb) return true;
     }
   } catch { }
@@ -446,26 +424,13 @@ function isPartner(number) {
   if (!number) return false;
   if (isOwner(number)) return true;
 
-  const cleanNumber = number
-    .split(":")[0]
-    .split("@")[0]
-    .replace(/[^0-9]/g, "");
-  const partnerList = config.partnerUsers || [];
+  const cleanNumber = normalizeNumber(number);
+  const partnerList = Array.isArray(config.partnerUsers)
+    ? config.partnerUsers
+    : [];
 
-  const inConfig = partnerList.some((partner) => {
-    if (!partner) return false;
-    const cleanPartner = partner
-      .split(":")[0]
-      .split("@")[0]
-      .replace(/[^0-9]/g, "");
-    return (
-      cleanNumber === cleanPartner ||
-      cleanNumber.endsWith(cleanPartner) ||
-      cleanPartner.endsWith(cleanNumber)
-    );
-  });
-
-  if (inConfig) return true;
+  if (partnerList.some((partner) => matchesNumber(number, partner)))
+    return true;
 
   try {
     if (ownerPremiumDb && ownerPremiumDb.isPartner(cleanNumber)) return true;
@@ -476,8 +441,8 @@ function isPartner(number) {
     if (db && db.data && Array.isArray(db.data.partner)) {
       const now = Date.now();
       const foundIndex = db.data.partner.findIndex((p) => {
-        if (typeof p === "string") return p === cleanNumber;
-        if (p.id) return p.id === cleanNumber;
+        if (typeof p === "string") return matchesNumber(p, cleanNumber);
+        if (p.id) return matchesNumber(p.id, cleanNumber);
         return false;
       });
 
@@ -505,11 +470,6 @@ function isBanned(number) {
   if (!number) return false;
   if (isOwner(number)) return false;
 
-  const cleanNumber = number
-    .split(":")[0]
-    .split("@")[0]
-    .replace(/[^0-9]/g, "");
-
   let bannedList = [];
   try {
     const db = getDatabase();
@@ -519,28 +479,16 @@ function isBanned(number) {
     }
   } catch { }
 
-  return bannedList.some((banned) => {
-    const cleanBanned = String(banned)
-      .split(":")[0]
-      .split("@")[0]
-      .replace(/[^0-9]/g, "");
-    return (
-      cleanNumber === cleanBanned ||
-      cleanNumber.endsWith(cleanBanned) ||
-      cleanBanned.endsWith(cleanNumber)
-    );
-  });
+  return bannedList.some((banned) => matchesNumber(number, banned));
 }
 
 function setBotNumber(number) {
-  if (number) config.bot.number = number.replace(/[^0-9]/g, "");
+  if (number) config.bot.number = normalizeNumber(number);
 }
 
 function isSelf(number) {
   if (!number || !config.bot.number) return false;
-  const cleanNumber = number.replace(/[^0-9]/g, "");
-  const botNumber = config.bot.number.replace(/[^0-9]/g, "");
-  return cleanNumber.includes(botNumber) || botNumber.includes(cleanNumber);
+  return matchesNumber(number, config.bot.number);
 }
 
 function getOwnerName(number) {
@@ -551,16 +499,10 @@ function getOwnerName(number) {
     const nameMap = db.setting("ownerNames") || {};
     if (nameMap[cleanNumber]) return nameMap[cleanNumber];
   } catch { }
-  if (config.owner?.number) {
-    const isMainOwner = config.owner.number.some((own) => {
-      const c = own.replace(/[^0-9]/g, "");
-      return (
-        c &&
-        (cleanNumber === c ||
-          cleanNumber.endsWith(c) ||
-          c.endsWith(cleanNumber))
-      );
-    });
+  if (Array.isArray(config.owner?.number)) {
+    const isMainOwner = config.owner.number.some(
+      (own) => matchesNumber(cleanNumber, own),
+    );
     if (isMainOwner) return config.owner?.name || "Owner";
   }
   return "Owner";
