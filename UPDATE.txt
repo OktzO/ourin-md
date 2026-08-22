@@ -1,0 +1,45 @@
+*OURIN MD 3.1*
+
+🌾 Apa aja yang di update?
+
+[ 🥐 *FITUR BARU* ]
+- *.autobio* - ganti bio setiap menit ( Kata kata bisa di atur )
+- *.capprem* - cap sebuah fitur menjadi premium
+- *.capfree* - cap sebuah fitur menjadi free / gratisan
+- *.fiturpremium* - melihat daftar seluruh fitur premium
+- *.whatrolethis* - melihat persyaratan akses sebuah fitur
+- *.howmuchenergy* - melihat potongan energi sebuah fitur
+- *.capenergi* - mengubah potongan energi suatu fitur
+- *.sistemenergi* - menghidupkan atau mematikan sistem energi secara global
+- *.pin2* - cari single gambar pinterest yang dilengkapi tombol "Next"
+- *.dpsteai* - chat dengan AI dari dipastebin ai (session per user)
+- *.iqcpink* - iqc versi pink ( support gambar )
+- *.igstoryimg* - membuat ig story gambar pake canvas
+- *.igstory* - membuat ig story gambar pake canvas
+- *.spekhp* - mencari spesifikasi hp ( gak lengkap )
+- *.bandingkan-hp* - membandingkan hp
+- *.buatquotes* - buat kata kata dengan bg anime
+- *.kalender* - kalender tahun ini  
+- *.mywaifu* - mencari gambar waifu
+- *.stalkml* - stalking ml id
+- *.stalkdc* - stalking info profil akun discord
+- *.livescore* - melihat live score pertandingan bola
+
+[ 🚧 *PERBAIKAN* ]
+- plugin hd
+- plugin fbdown
+- bug pada plugin addlevel ( expnya nyasar dan kelipatan salah )
+- bug pada bagian game on/off dan rpg on/off
+
+[ 🚀 *PENINGKATAN* ] 
+- sekarang fitur *addprem* support waktu jam, menit, detik
+- perombakan nama command: *.pin* (pin grup) diubah menjadi *.pinchat*
+- perombakan nama command: *.pins* (cari gambar pinterest) diubah menjadi *.pin*
+- merombak total plugin *.ai* untuk menggunakan API Gemini Bard dan mengaktifkan fitur render modern (AIRich) untuk tabel, kode, dll
+- sekarang *.iqc* support gambar
+- sekarang *.pindl* support video dan gambar
+- menambahkan 1 provider baru di *.tourl*
+- menambahkan 1 variant menu
+- menambahkan 4 variant reply
+- merombak tampilann *.ping*
+- menambahkan 7 fitur canvas baru (*.fakexnxx*, *.genxnxx*, *.img2ios*, *.jmk48*, *.juaraml*, *.facepalm*, *.fakewa*)
