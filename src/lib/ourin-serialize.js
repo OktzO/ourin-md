@@ -31,7 +31,6 @@ import {
 } from "./ourin-lid.js";
 import util from "util";
 import axios from "axios";
-import sharp from "sharp";
 import fsc from "fs";
 import { getDatabase } from "./ourin-database.js";
 import { saluranCtx } from "./ourin-context.js";
@@ -865,6 +864,7 @@ async function serialize(sock, msg, store = {}) {
         },
       };
 
+      const sharp = await _getSharp();
       return sock.sendMessage(
         await ensureResolved(m.chat),
         {
@@ -931,6 +931,7 @@ async function serialize(sock, msg, store = {}) {
         },
       );
     } else if (replyVariant === 5) {
+      const sharp = await _getSharp();
       const thumbnailBuf = srtImage || getAssetBuffer("ourin");
       const fakeOrder = {
         key: {
@@ -967,6 +968,7 @@ async function serialize(sock, msg, store = {}) {
         }
       );
     } else if (replyVariant === 6) {
+      const sharp = await _getSharp();
       return sock.sendMessage(
         await ensureResolved(m.chat),
         {
@@ -989,6 +991,7 @@ async function serialize(sock, msg, store = {}) {
       );
     } else if (replyVariant === 7) {
       const thumbnailBuf = srtImage || getAssetBuffer("ourin");
+      const sharp = await _getSharp();
 
       const msg = generateWAMessageFromContent(m.chat, {
         viewOnceMessage: {
@@ -1027,6 +1030,7 @@ async function serialize(sock, msg, store = {}) {
       });
     } else if (replyVariant === 8) {
       const thumbnailBuf = srtImage || getAssetBuffer("ourin");
+      const sharp = await _getSharp();
 
       return await sock.relayMessage(m.chat, {
         interactiveMessage: {

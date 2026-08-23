@@ -1,12 +1,12 @@
-import { Canvas, loadImage, FontLibrary } from 'skia-canvas'
+import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas'
 import te from '../../src/lib/ourin-error.js'
-FontLibrary.use('CartoonVibes', process.cwd() + '/assets/fonts/Epep.ttf')
+GlobalFonts.registerFromPath(process.cwd() + '/assets/fonts/Epep.ttf', 'CartoonVibes')
 
 async function generate(angka) {
   const bg = await loadImage('https://raw.githubusercontent.com/uploader762/dat3/main/uploads/9c18e0-1772932032348.jpg')
   const logo = await loadImage('https://raw.githubusercontent.com/uploader762/dat3/main/uploads/d0f081-1772929197100.png')
 
-  const canvas = new Canvas(bg.width, bg.height)
+  const canvas = createCanvas(bg.width, bg.height)
   const ctx = canvas.getContext('2d')
 
   ctx.drawImage(bg, 0, 0)
@@ -30,7 +30,7 @@ async function generate(angka) {
 
   ctx.drawImage(logo, logoX, logoY, logoSize, logoSize)
 
-  return await canvas.png
+  return await canvas.encode('png')
 }
 const pluginConfig = {
     name: 'fakedana',

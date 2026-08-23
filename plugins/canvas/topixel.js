@@ -1,6 +1,11 @@
-import sharp from "sharp";
 import { downloadMediaMessage, getContentType } from "ourin";
 import te from "../../src/lib/ourin-error.js";
+
+let _sharp;
+async function getSharp() {
+  if (!_sharp) _sharp = (await import("sharp")).default;
+  return _sharp;
+}
 
 const pluginConfig = {
   name: "topixel",
@@ -24,6 +29,7 @@ function getBlock(level) {
 }
 
 async function pixelArt(inputBuffer, level) {
+  const sharp = await getSharp();
   const image = sharp(inputBuffer, { limitInputPixels: false }).rotate().ensureAlpha();
   const meta = await image.metadata();
 

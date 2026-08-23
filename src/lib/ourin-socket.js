@@ -31,7 +31,6 @@ import ffmpeg from "fluent-ffmpeg";
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 import { config } from "./../../config.js";
 import mime from "mime-types";
-import sharp from "sharp";
 import {
   getProfilePicture,
   getProfileBuffer,

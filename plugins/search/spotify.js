@@ -1,7 +1,12 @@
 import axios from "axios";
 import te from "../../src/lib/ourin-error.js";
 import { generateWAMessageFromContent } from "ourin";
-import sharp from "sharp";
+
+let _sharp;
+async function getSharp() {
+  if (!_sharp) _sharp = (await import("sharp")).default;
+  return _sharp;
+}
 
 const pluginConfig = {
   name: "spotify",
@@ -52,7 +57,7 @@ async function handler(m, { sock, text }) {
     let thumbnailBuffer = null;
     try {
       const imageResponse = await axios.get(firstResult.thumb, { responseType: "arraybuffer" });
-      thumbnailBuffer = await sharp(imageResponse.data).resize(300, 170).jpeg().toBuffer();
+      thumbnailBuffer = await (await getSharp())(imageResponse.data).resize(300, 170).jpeg().toBuffer();
     } catch (e) {
     }
 

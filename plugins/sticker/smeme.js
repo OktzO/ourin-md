@@ -1,8 +1,9 @@
 import FormData from 'form-data'
-import _sharp from 'sharp'
 import axios from "axios";
 
-function getSharp() {
+let _sharp;
+async function getSharp() {
+  if (!_sharp) _sharp = (await import("sharp")).default;
   return _sharp;
 }
 import fs from "fs";

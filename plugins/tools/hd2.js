@@ -1,9 +1,10 @@
-import _sharp from 'sharp'
 import { upload, get } from "../../src/scraper/hd.js";
 import axios from "axios";
 import config from "../../config.js";
 
-function getSharp() {
+let _sharp;
+async function getSharp() {
+  if (!_sharp) _sharp = (await import("sharp")).default;
   return _sharp;
 }
 import FormData from "form-data";

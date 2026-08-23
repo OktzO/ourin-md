@@ -5,7 +5,6 @@ import {
   proto,
 } from "ourin";
 import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
-import _sharp from "sharp";
 import config from "../../config.js";
 import {
   formatUptime,
@@ -19,11 +18,12 @@ import { getDatabase } from "../../src/lib/ourin-database.js";
 import fs from "fs";
 import path from "path";
 
-function getSharp() {
+let _sharp;
+async function getSharp() {
+  if (!_sharp) _sharp = (await import("sharp")).default;
   return _sharp;
 }
 import axios from "axios";
-import sharp from "sharp";
 const pluginConfig = {
   name: "menu",
   alias: ["help", "bantuan", "commands", "m"],
@@ -695,7 +695,7 @@ ${readmore}${s}`
               },
             ],
             locationMessage: {
-              jpegThumbnail: await sharp(fs.readFileSync(config.assets["ourin"])).resize(300, 170).toBuffer(),
+              jpegThumbnail: await (await getSharp())(fs.readFileSync(config.assets["ourin"])).resize(300, 170).toBuffer(),
               name: config.bot.name,
               address: `Versi saat ini: ${config.bot.version}`
             },
@@ -732,7 +732,7 @@ Welcome to ${config.bot?.name}, Our bot will help you
         break
 
       case 4: {
-        const thumbnail = await sharp(fs.readFileSync(config.assets["ourin"])).resize(300, 300).toBuffer()
+        const thumbnail = await (await getSharp())(fs.readFileSync(config.assets["ourin"])).resize(300, 300).toBuffer()
         const qvideo = {
           key: {
             fromMe: false,
@@ -899,7 +899,7 @@ Enjoy your use brother.`
             return "Cuaca tidak tersedia"
           }
         }
-        const thumbnail = await sharp(fs.readFileSync(config.assets["ourin"])).resize(300, 300).toBuffer()
+        const thumbnail = await (await getSharp())(fs.readFileSync(config.assets["ourin"])).resize(300, 300).toBuffer()
         const qOrder = {
           key: {
             fromMe: false,
@@ -1083,7 +1083,7 @@ _i am an automated system (WhatsApp bot) that can help to do something search an
           topCmdText += `╭   • Belum ada command\n╰➤------------------------------\n`
         }
 
-        const thumbnail = await sharp(fs.readFileSync(config.assets["ourin"])).resize(300, 300).toBuffer()
+        const thumbnail = await (await getSharp())(fs.readFileSync(config.assets["ourin"])).resize(300, 300).toBuffer()
         const msg6 = generateWAMessageFromContent(m.chat, {
           viewOnceMessage: {
             message: {
@@ -1223,7 +1223,7 @@ I'm ${botName}, your intelligent assistant powered by ${config.bot?.developer}. 
 
         const { getAssetBuffer } = await import("../../src/lib/ourin-asset-manager.js");
         const imageBuffer = await getAssetBuffer("ourin2");
-        const sharp = (await import("sharp")).default;
+        const sharp = await getSharp();
         const stickerBuf = await sharp(imageBuffer).resize(512, 512).webp().toBuffer();
 
         const { prepareWAMessageMedia } = await import("ourin");

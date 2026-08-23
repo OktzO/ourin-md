@@ -1,1 +1,30 @@
-{}
+{
+  "6285608953677": {
+    "name": "Oktz",
+    "lastSeen": "2026-08-23T01:52:03.790Z",
+    "jid": "6285608953677",
+    "number": "6285608953677",
+    "energi": 99999,
+    "isPremium": false,
+    "isBanned": false,
+    "exp": 30,
+    "level": 1,
+    "koin": 0,
+    "saldo": 0,
+    "unlockedFeatures": [],
+    "registeredAt": null,
+    "lastRegisteredAt": null,
+    "registrationCount": 0,
+    "hasClaimedRegisterReward": false,
+    "unregisteredAt": null,
+    "cooldowns": {},
+    "clanId": null,
+    "isRegistered": false,
+    "regName": null,
+    "regAge": null,
+    "regGender": null,
+    "rpg": {},
+    "inventory": {},
+    "access": []
+  }
+}
