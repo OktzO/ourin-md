@@ -194,11 +194,14 @@ const config = {
   },
 
   database: { path: "./database/main" },
+  // TURSO — DB + session disimpan remote di Turso (libsql).
+  // Isi url + authToken punyamu di sini (atau pakai env TURSO_URL / TURSO_AUTH_TOKEN).
+  // Ambil di https://console.turso.io → create database → generate token.
   turso: {
-    url: process.env.TURSO_URL || "libsql://whatsapp-oktzo.aws-ap-northeast-1.turso.io",
-    authToken: process.env.TURSO_AUTH_TOKEN || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODc0NTAyNzYsImlkIjoiMDFhMDJjNTYtOWMwMS03YzBkLTgxMzctYjg3YmI3OGZjNDI4Iiwia2lkIjoiSXdvVDJfSkNDRU5lNWsyTzdhYkRaMmJJQzBoVFVOd215R0ZKSDdRUk5iMCIsInJpZCI6ImRjYmY0MGQ2LWQ2OTYtNDQ3Ni1iMGZhLWZkMGFlMmNjYTUzZCJ9.IWdMWAFEOV8ZaNGn9bJB2_30r4fICMsBPs3typwtjhNxR7gQ0yqIzEYpD2UVhL0a5WCFn5b39M-ez1nX1F5-Dw",
-    syncInterval: 5000,
-    enabled: true,
+    url: "", // contoh: "libsql://nama-db.aws-ap-northeast-1.turso.io"
+    authToken: "", // token (JWT) dari console Turso
+    syncInterval: 5000, // write-behind DB (ms)
+    enabled: true, // false = fallback ke file JSON + file session lokal
   },
   backup: { enabled: false, intervalHours: 24, retainDays: 7 },
   scheduler: { resetHour: 0, resetMinute: 0 },
