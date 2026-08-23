@@ -14,7 +14,7 @@ function startMemoryMonitor() {
   monitorTimer = setInterval(() => {
     const mem = process.memoryUsage();
 
-    if (global.gc) global.gc();
+    if (global.gc && mem.heapUsed > 500 * 1024 * 1024) global.gc();
 
     if (mem.rss >= RSS_LIMIT) {
       logger.warn(

@@ -24,7 +24,7 @@ import {
   isLidConverted,
 } from "./lib/ourin-lid.js";
 import { initAutoBackup } from "./lib/ourin-auto-backup.js";
-const groupCache = new NodeCache({ stdTTL: 5 * 60, useClones: false });
+const groupCache = new NodeCache({ stdTTL: 3 * 60, useClones: false });
 const processedMessages = new NodeCache({ stdTTL: 30, useClones: false });
 const msgRetryCounterCache = new NodeCache({ stdTTL: 60, useClones: false });
 
@@ -79,7 +79,7 @@ const store = {
         const chat = this.messages.get(jid);
         if (msg.key?.id) {
           chat.set(msg.key.id, msg);
-          if (chat.size > 200) {
+          if (chat.size > 50) {
             const keys = [...chat.keys()];
             for (let i = 0; i < keys.length - 150; i++) chat.delete(keys[i]);
           }
@@ -109,6 +109,10 @@ const store = {
     ev.on("chats.upsert", (chats) => {
       for (const chat of chats) {
         if (chat.id) this.chats.set(chat.id, chat);
+        if (this.chats.size > 500) {
+          const first = this.chats.keys().next().value;
+          if (first) this.chats.delete(first);
+        }
       }
     });
     ev.on("contacts.upsert", (contacts) => {
