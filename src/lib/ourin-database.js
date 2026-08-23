@@ -35,6 +35,7 @@ class Database {
     this.flushTimer = null;
     this.tursoClient = null;
     this.tursoEnabled = false;
+    this._tursoChain = Promise.resolve();
     this.ensureDir();
   }
 
@@ -208,7 +209,10 @@ class Database {
   registerShutdownHooks() {
     const flush = () => {
       try {
-        this.flushAll();
+        if (this.tursoEnabled) {
+          this.flushAllToTurso().catch(() => {});
+        }
+        this.flushSyncToFiles();
       } catch {}
     };
     process.on("exit", flush);
@@ -310,19 +314,52 @@ class Database {
     return true;
   }
 
-  async writeToTurso(key) {
-    const data = JSON.stringify(this.stores[key].data);
+  _tursoEnqueue(fn) {
+    const p = this._tursoChain.then(fn, fn);
+    this._tursoChain = p.catch(() => {});
+    return p;
+  }
+
+  writeToTurso(key, data) {
+    const payload = data !== undefined ? data : this.stores[key].data;
     const now = Date.now();
-    await this.tursoClient.execute({
-      sql: "INSERT INTO stores (key, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
-      args: [key, data, now],
-    });
+    const json = JSON.stringify(payload);
+    return this._tursoEnqueue(() =>
+      this.tursoClient.execute({
+        sql: "INSERT INTO stores (key, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
+        args: [key, json, now],
+      }),
+    );
   }
 
   async flushAllToTurso() {
-    for (const key of Object.keys(this.stores)) {
+    const keys = Object.keys(this.stores);
+    const snapshots = {};
+    for (const key of keys) snapshots[key] = this.stores[key].data;
+    let ok = true;
+    for (const key of keys) {
       try {
-        await this.writeToTurso(key);
+        await this.writeToTurso(key, snapshots[key]);
+      } catch (e) {
+        console.warn(`[turso] write ${key} failed:`, e.message);
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  flushSyncToFiles() {
+    for (const key of Object.keys(this.stores)) {
+      const store = this.stores[key];
+      if (!store) continue;
+      try {
+        const filePath =
+          store.adapter?.filename ||
+          path.join(this.dbPath, `${key}.json`);
+        const temp = filePath + ".tmp";
+        fs.writeFileSync(temp, JSON.stringify(store.data, null, 2), "utf-8");
+        fs.renameSync(temp, filePath);
+        this.dirty[key] = false;
       } catch {}
     }
   }
@@ -397,12 +434,10 @@ class Database {
 
   async save() {
     if (this.tursoEnabled) {
-      try {
-        await this.flushAllToTurso();
-        return true;
-      } catch {
-        return false;
-      }
+      const ok = await this.flushAllToTurso();
+      if (ok) return true;
+      this.flushSyncToFiles();
+      return false;
     }
     try {
       this.flushAll();
