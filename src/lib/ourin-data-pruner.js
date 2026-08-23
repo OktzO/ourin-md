@@ -17,6 +17,8 @@ function startDailyPruner() {
             const threshold = now - INACTIVE_THRESHOLD
             let prunedUsers = 0
             let prunedGroups = 0
+            let prunedPremium = 0
+            let prunedPartner = 0
 
             const users = db.db.data.users
             if (users && typeof users === 'object') {
@@ -44,9 +46,28 @@ function startDailyPruner() {
                 }
             }
 
-            if (prunedUsers > 0 || prunedGroups > 0) {
+            if (Array.isArray(db.db.data.premium)) {
+                const preLen = db.db.data.premium.length;
+                db.db.data.premium = db.db.data.premium.filter(p => {
+                    if (typeof p === 'string') return true;
+                    const expire = p.expired || (p.expiredAt ? new Date(p.expiredAt).getTime() : 0);
+                    return !expire || expire > now;
+                });
+                prunedPremium += preLen - db.db.data.premium.length;
+            }
+            if (Array.isArray(db.db.data.partner)) {
+                const partLen = db.db.data.partner.length;
+                db.db.data.partner = db.db.data.partner.filter(p => {
+                    if (typeof p === 'string') return true;
+                    const expire = p.expired || (p.expiredAt ? new Date(p.expiredAt).getTime() : 0);
+                    return !expire || expire > now;
+                });
+                prunedPartner += partLen - db.db.data.partner.length;
+            }
+
+            if (prunedUsers > 0 || prunedGroups > 0 || prunedPremium > 0 || prunedPartner > 0) {
                 db.save()
-                logger.system('pruner', `removed ${prunedUsers} users, ${prunedGroups} groups (>${INACTIVE_THRESHOLD / 86400000}d inactive)`)
+                logger.system('pruner', `removed ${prunedUsers} users, ${prunedGroups} groups, ${prunedPremium} premium, ${prunedPartner} partner (>${INACTIVE_THRESHOLD / 86400000}d inactive)`)
             }
         } catch (error) {
             logger.error('pruner', error.message)
