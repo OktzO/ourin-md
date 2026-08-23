@@ -128,6 +128,13 @@ async function handler(m, { sock, config: botConfig, db, uptime }) {
   const greeting = getTimeGreeting();
   let txt = ``;
 
+  let imageBuffer = null;
+  let thumbBuffer = null;
+  try {
+    imageBuffer = fs.readFileSync(botConfig.assets["ourin"]);
+    thumbBuffer = fs.readFileSync(botConfig.assets["ourin2"]);
+  } catch (e) { }
+
   const weatherCodeMap = {
     0: "☀️ Cerah", 1: "🌤️ Cerah Berawan", 2: "⛅ Berawan", 3: "☁️ Mendung", 45: "🌫️ Berkabut", 48: "🌫️ Kabut Tebal", 51: "🌦️ Gerimis", 61: "🌧️ Hujan Ringan", 63: "🌧️ Hujan", 65: "⛈️ Hujan Lebat", 80: "🌦️ Hujan Lokal", 95: "⛈️ Badai Petir"
   };

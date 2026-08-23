@@ -7,7 +7,8 @@
     "start": "set NODE_ENV=development&& node index.js",
     "dev": "node index.js",
     "test": "node --test tests/",
-    "lint": "eslint plugins/"
+    "lint": "eslint plugins/",
+    "postinstall": "node -e \"try{require('sharp')}catch(e){require('child_process').execSync('npm rebuild sharp --foreground-scripts',{stdio:'inherit'})}\""
   },
   "keywords": [
     "whatsapp",
