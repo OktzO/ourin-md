@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import config from "../../config.js";
 import { logger } from "./ourin-logger.js";
+import { createTursoClient, initTursoTables } from "./ourin-turso.js";
 const FLUSH_INTERVAL_MS = 5000;
 
 const defaultUsers = {};
@@ -32,6 +33,8 @@ class Database {
     };
     this.ready = false;
     this.flushTimer = null;
+    this.tursoClient = null;
+    this.tursoEnabled = false;
     this.ensureDir();
   }
 
@@ -106,6 +109,24 @@ class Database {
 
         store.write();
         this.stores[key] = store;
+      }
+
+      this.tursoClient = await createTursoClient(config.turso);
+      this.tursoEnabled = !!this.tursoClient;
+      if (this.tursoEnabled) {
+        try {
+          await initTursoTables(this.tursoClient);
+          const loaded = await this.loadFromTurso();
+          if (loaded) {
+            logger.info("database", "data dimuat dari Turso");
+          } else {
+            await this.flushAllToTurso();
+            logger.info("database", "seed data lokal ke Turso");
+          }
+        } catch (e) {
+          console.warn('[turso] init failed, falling back to files:', e.message);
+          this.tursoEnabled = false;
+        }
       }
 
       this.db.data = {
@@ -208,6 +229,15 @@ class Database {
 
   async _asyncWrite(key) {
     if (!this.stores[key]) return;
+    if (this.tursoEnabled) {
+      try {
+        await this.writeToTurso(key);
+        this.dirty[key] = false;
+        return;
+      } catch (e) {
+        // fallback to file write
+      }
+    }
     if (this._writing?.has(key)) {
       this._pendingWrite?.add(key);
       return;
@@ -234,6 +264,10 @@ class Database {
   }
 
   flushAll() {
+    if (this.tursoEnabled) {
+      this.flushAllToTurso().catch(() => {});
+      return;
+    }
     for (const key of Object.keys(this.stores)) {
       try {
         this.stores[key].write();
@@ -246,6 +280,49 @@ class Database {
     for (const store of Object.values(this.stores)) {
       try {
         store.read();
+      } catch {}
+    }
+  }
+
+  refreshDbData() {
+    this.db.data = {
+      users: this.stores.users.data,
+      groups: this.stores.groups.data,
+      settings: this.stores.settings.data,
+      stats: this.stores.stats.data,
+      sewa: this.stores.sewa.data,
+      premium: this.stores.premium.data,
+      owner: this.stores.owner.data,
+    };
+    if (this.stores.partner) this.db.data.partner = this.stores.partner.data;
+  }
+
+  async loadFromTurso() {
+    const rs = await this.tursoClient.execute("SELECT key, data FROM stores");
+    if (!rs.rows || rs.rows.length === 0) return false;
+    for (const row of rs.rows) {
+      const key = row.key;
+      const data = JSON.parse(row.data);
+      if (!this.stores[key]) continue;
+      this.stores[key].data = data;
+    }
+    this.refreshDbData();
+    return true;
+  }
+
+  async writeToTurso(key) {
+    const data = JSON.stringify(this.stores[key].data);
+    const now = Date.now();
+    await this.tursoClient.execute({
+      sql: "INSERT INTO stores (key, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at",
+      args: [key, data, now],
+    });
+  }
+
+  async flushAllToTurso() {
+    for (const key of Object.keys(this.stores)) {
+      try {
+        await this.writeToTurso(key);
       } catch {}
     }
   }
@@ -319,6 +396,14 @@ class Database {
   }
 
   async save() {
+    if (this.tursoEnabled) {
+      try {
+        await this.flushAllToTurso();
+        return true;
+      } catch {
+        return false;
+      }
+    }
     try {
       this.flushAll();
       return true;
@@ -638,6 +723,10 @@ class Database {
       stats: false,
       sewa: false,
     };
+
+    if (this.tursoEnabled) {
+      this.flushAllToTurso().catch(() => {});
+    }
 
     return {
       resetCount,
