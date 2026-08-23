@@ -47,22 +47,22 @@ function startDailyPruner() {
             }
 
             if (Array.isArray(db.db.data.premium)) {
-                const preLen = db.db.data.premium.length;
-                db.db.data.premium = db.db.data.premium.filter(p => {
-                    if (typeof p === 'string') return true;
+                const arr = db.db.data.premium;
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    const p = arr[i];
+                    if (typeof p === 'string') continue;
                     const expire = p.expired || (p.expiredAt ? new Date(p.expiredAt).getTime() : 0);
-                    return !expire || expire > now;
-                });
-                prunedPremium += preLen - db.db.data.premium.length;
+                    if (expire && expire <= now) { arr.splice(i, 1); prunedPremium++; }
+                }
             }
             if (Array.isArray(db.db.data.partner)) {
-                const partLen = db.db.data.partner.length;
-                db.db.data.partner = db.db.data.partner.filter(p => {
-                    if (typeof p === 'string') return true;
+                const arr = db.db.data.partner;
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    const p = arr[i];
+                    if (typeof p === 'string') continue;
                     const expire = p.expired || (p.expiredAt ? new Date(p.expiredAt).getTime() : 0);
-                    return !expire || expire > now;
-                });
-                prunedPartner += partLen - db.db.data.partner.length;
+                    if (expire && expire <= now) { arr.splice(i, 1); prunedPartner++; }
+                }
             }
 
             if (prunedUsers > 0 || prunedGroups > 0 || prunedPremium > 0 || prunedPartner > 0) {

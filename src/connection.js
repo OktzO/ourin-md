@@ -81,7 +81,7 @@ const store = {
           chat.set(msg.key.id, msg);
           if (chat.size > 50) {
             const keys = [...chat.keys()];
-            for (let i = 0; i < keys.length - 150; i++) chat.delete(keys[i]);
+            for (let i = 0; i < keys.length - 50; i++) chat.delete(keys[i]);
           }
         }
         if (msg.key?.participantAlt && msg.key?.participant) {
