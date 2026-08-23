@@ -103,6 +103,10 @@ const store = {
         }
         if (msg.pushName && jid.endsWith("@s.whatsapp.net")) {
           this.contacts[jid] = { ...this.contacts[jid], notify: msg.pushName };
+          if (Object.keys(this.contacts).length > 500) {
+            const firstContact = Object.keys(this.contacts)[0];
+            if (firstContact) delete this.contacts[firstContact];
+          }
         }
       }
     });

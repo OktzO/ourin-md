@@ -5,6 +5,7 @@ const keysCache = new Map();
 const KEYS_CACHE_CAP = 1000;
 
 async function loadState(scope) {
+  try {
   const client = getTursoClient();
   if (!client) return null;
   // load creds
@@ -79,15 +80,33 @@ async function loadState(scope) {
       },
     },
   };
+  } catch (e) {
+    console.warn('[turso-session] load failed, falling back:', e.message);
+    return null;
+  }
 }
 
 async function saveCreds(scope, creds) {
+  try {
+    const client = getTursoClient();
+    if (!client) return;
+    await client.execute({
+      sql: 'INSERT INTO session_creds (scope, creds, updated_at) VALUES (?, ?, ?) ON CONFLICT(scope) DO UPDATE SET creds = excluded.creds, updated_at = excluded.updated_at',
+      args: [scope, JSON.stringify(creds, BufferJSON.replacer), Date.now()],
+    });
+  } catch (e) {
+    console.warn('[turso-session] save failed:', e.message);
+  }
+}
+
+async function deleteTursoSession(scope) {
   const client = getTursoClient();
+  keysCache.delete(scope + ':session');
   if (!client) return;
-  await client.execute({
-    sql: 'INSERT INTO session_creds (scope, creds, updated_at) VALUES (?, ?, ?) ON CONFLICT(scope) DO UPDATE SET creds = excluded.creds, updated_at = excluded.updated_at',
-    args: [scope, JSON.stringify(creds, BufferJSON.replacer), Date.now()],
-  });
+  try {
+    await client.execute({ sql: 'DELETE FROM session_creds WHERE scope = ?', args: [scope] });
+    await client.execute({ sql: 'DELETE FROM session_keys WHERE scope = ?', args: [scope] });
+  } catch (e) { console.warn('[turso-session] delete failed:', e.message); }
 }
 
 async function useTursoAuthState(scope = 'main') {
@@ -102,4 +121,4 @@ async function useTursoAuthState(scope = 'main') {
   };
 }
 
-export { useTursoAuthState, loadState, saveCreds };
+export { useTursoAuthState, loadState, saveCreds, deleteTursoSession };

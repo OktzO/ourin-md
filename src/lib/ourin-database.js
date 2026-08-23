@@ -202,7 +202,7 @@ class Database {
 
   startFlushTimer() {
     if (this.flushTimer) clearInterval(this.flushTimer);
-    this.flushTimer = setInterval(() => this.flushDirty(), FLUSH_INTERVAL_MS);
+    this.flushTimer = setInterval(() => this.flushDirty(), config.turso?.syncInterval || FLUSH_INTERVAL_MS);
     if (this.flushTimer.unref) this.flushTimer.unref();
   }
 

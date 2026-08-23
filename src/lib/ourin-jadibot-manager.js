@@ -770,6 +770,10 @@ async function stopJadibot(jid, deleteSession = false) {
     if (fs.existsSync(authPath)) {
       fs.rmSync(authPath, { recursive: true, force: true });
     }
+    if (config.turso?.enabled && config.turso?.url) {
+      const { deleteTursoSession } = await import('./ourin-turso-session.js');
+      await deleteTursoSession('jadibot:' + id);
+    }
   }
 
   return true;
