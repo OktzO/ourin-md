@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",
+    "@libsql/client": "^0.14.0",
     "@bochilteam/scraper-primbon": "^5.0.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/generative-ai": "^0.24.1",
