@@ -23,6 +23,16 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "allowScripts": {
+    "@ffmpeg-installer/linux-x64": true,
+    "btch-downloader": true,
+    "cpu-features": true,
+    "esbuild": true,
+    "protobufjs": true,
+    "sharp": true,
+    "ssh2": true,
+    "tesseract.js": true
+  },
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",
     "@libsql/client": "^0.14.0",
