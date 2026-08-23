@@ -1,4 +1,4 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
 describe('turso helper', () => {
@@ -7,5 +7,6 @@ describe('turso helper', () => {
     const { createTursoClient } = await import('../src/lib/ourin-turso.js');
     const client = await createTursoClient({ enabled: false });
     assert.strictEqual(client, null);
+    delete process.env.TURSO_ENABLED;
   });
 });

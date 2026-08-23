@@ -1,5 +1,3 @@
-import config from "../../config.js";
-
 let client = null;
 
 async function createTursoClient(cfg) {
