@@ -327,8 +327,16 @@ async function startJadibot(sock, m, userJid, usePairing = true) {
   if (TURSO_ENABLED) {
     const { useTursoAuthState } = await import('./ourin-turso-session.js');
     const result = await useTursoAuthState('jadibot:' + userJid.replace(/@.+/g, ''));
-    state = result.state;
-    saveCreds = result.saveCreds;
+    if (!result.state) {
+      const authPath = getJadibotAuthPath(userJid);
+      if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
+      const res = await useMultiFileAuthState(authPath);
+      state = res.state;
+      saveCreds = res.saveCreds;
+    } else {
+      state = result.state;
+      saveCreds = result.saveCreds;
+    }
   } else {
     const authPath = getJadibotAuthPath(userJid);
     if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });

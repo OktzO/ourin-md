@@ -1,7 +1,8 @@
+import { BufferJSON } from 'ourin';
 import { getTursoClient } from './ourin-turso.js';
 
-const credsCache = new Map();
 const keysCache = new Map();
+const KEYS_CACHE_CAP = 1000;
 
 async function loadState(scope) {
   const client = getTursoClient();
@@ -13,7 +14,7 @@ async function loadState(scope) {
   });
   let creds = null;
   if (credsRs.rows && credsRs.rows.length > 0) {
-    creds = JSON.parse(credsRs.rows[0].creds);
+    creds = JSON.parse(credsRs.rows[0].creds, BufferJSON.reviver);
   } else {
     const { initAuthCreds } = await import('ourin');
     creds = initAuthCreds();
@@ -35,7 +36,7 @@ async function loadState(scope) {
             args: [scope, type, ...missing],
           });
           for (const row of rs.rows) {
-            local.set(row.id, JSON.parse(row.data));
+            local.set(row.id, JSON.parse(row.data, BufferJSON.reviver));
           }
         }
         const result = {};
@@ -51,10 +52,16 @@ async function loadState(scope) {
           for (const [id, value] of Object.entries(entries)) {
             const cacheKey = `${scope}:${type}`;
             if (!keysCache.has(cacheKey)) keysCache.set(cacheKey, new Map());
-            keysCache.get(cacheKey).set(id, value);
+            const local = keysCache.get(cacheKey);
+            local.delete(id);
+            local.set(id, value);
+            if (local.size > KEYS_CACHE_CAP) {
+              const first = local.keys().next().value;
+              local.delete(first);
+            }
             await client.execute({
               sql: 'INSERT INTO session_keys (scope, category, id, data, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(scope, category, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at',
-              args: [scope, type, id, JSON.stringify(value), Date.now()],
+              args: [scope, type, id, JSON.stringify(value, BufferJSON.replacer), Date.now()],
             });
           }
         }
@@ -66,7 +73,7 @@ async function loadState(scope) {
         });
         const result = {};
         for (const row of rs.rows) {
-          result[row.id] = JSON.parse(row.data);
+          result[row.id] = JSON.parse(row.data, BufferJSON.reviver);
         }
         return result;
       },
@@ -77,10 +84,9 @@ async function loadState(scope) {
 async function saveCreds(scope, creds) {
   const client = getTursoClient();
   if (!client) return;
-  credsCache.set(scope, creds);
   await client.execute({
     sql: 'INSERT INTO session_creds (scope, creds, updated_at) VALUES (?, ?, ?) ON CONFLICT(scope) DO UPDATE SET creds = excluded.creds, updated_at = excluded.updated_at',
-    args: [scope, JSON.stringify(creds), Date.now()],
+    args: [scope, JSON.stringify(creds, BufferJSON.replacer), Date.now()],
   });
 }
 
