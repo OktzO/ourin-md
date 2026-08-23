@@ -8,6 +8,7 @@ import {
   jidNormalizedUser,
   useMultiFileAuthState,
 } from "ourin";
+import config from "../../config.js";
 import { logger } from "./ourin-logger.js";
 import { addJadibotOwner } from "./ourin-jadibot-database.js";
 import { extendSocket } from "./ourin-socket.js";
@@ -321,7 +322,20 @@ async function startJadibot(sock, m, userJid, usePairing = true) {
     fs.mkdirSync(authPath, { recursive: true });
   }
 
-  const { state, saveCreds } = await useMultiFileAuthState(authPath);
+  const TURSO_ENABLED = config.turso?.enabled && config.turso?.url;
+  let state, saveCreds;
+  if (TURSO_ENABLED) {
+    const { useTursoAuthState } = await import('./ourin-turso-session.js');
+    const result = await useTursoAuthState('jadibot:' + userJid.replace(/@.+/g, ''));
+    state = result.state;
+    saveCreds = result.saveCreds;
+  } else {
+    const authPath = getJadibotAuthPath(userJid);
+    if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
+    const result = await useMultiFileAuthState(authPath);
+    state = result.state;
+    saveCreds = result.saveCreds;
+  }
 
   const {
     default: makeWASocket,

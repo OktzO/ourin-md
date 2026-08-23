@@ -228,17 +228,30 @@ async function startConnection(options = {}) {
     connectionState.sock = null;
   }
 
-  const sessionPath = path.join(
-    process.cwd(),
-    "storage",
-    config.session?.folderName || "session",
-  );
+  const TURSO_ENABLED = config.turso?.enabled && config.turso?.url;
 
-  if (!fs.existsSync(sessionPath)) {
-    fs.mkdirSync(sessionPath, { recursive: true });
+  let state, saveCreds;
+  if (TURSO_ENABLED) {
+    const { useTursoAuthState } = await import("./lib/ourin-turso-session.js");
+    const result = await useTursoAuthState('main');
+    if (!result.state) {
+      // turso client gagal — fallback ke file
+      const sessionPath = path.join(process.cwd(), 'storage', config.session?.folderName || 'session');
+      if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
+      const res = await useMultiFileAuthState(sessionPath);
+      state = res.state;
+      saveCreds = res.saveCreds;
+    } else {
+      state = result.state;
+      saveCreds = result.saveCreds;
+    }
+  } else {
+    const sessionPath = path.join(process.cwd(), 'storage', config.session?.folderName || 'session');
+    if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
+    const result = await useMultiFileAuthState(sessionPath);
+    state = result.state;
+    saveCreds = result.saveCreds;
   }
-
-  const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
   const { version, isLatest } = await fetchLatestBaileysVersion();
 
